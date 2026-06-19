@@ -2,8 +2,8 @@ name: Fetch YouTube Videos
 
 on:
   schedule:
-    - cron: '0 */6 * * *'   # runs every 6 hours
-  workflow_dispatch:          # lets you trigger it manually from GitHub
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
 
 jobs:
   fetch-videos:
@@ -21,11 +21,12 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: pip install feedparser
+        run: pip install feedparser youtube-transcript-api groq
 
-      - name: Fetch new videos
+      - name: Fetch and summarize new videos
         env:
           YOUTUBE_RSS_URL: ${{ secrets.YOUTUBE_RSS_URL }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
         run: python scripts/fetch_videos.py
 
       - name: Commit and push new posts

@@ -9,6 +9,7 @@ layout: default
   </header>
 
   <div class="post-content">
+
     {% if page.youtube_id %}
     <div class="video-embed">
       <iframe
@@ -19,7 +20,18 @@ layout: default
     </div>
     {% endif %}
 
+    {% if page.tech_stack and page.tech_stack != "" and page.tech_stack != "None" %}
+    <div class="tech-stack">
+      <span class="tech-stack-label">Tech</span>
+      {% assign techs = page.tech_stack | split: ", " %}
+      {% for tech in techs %}
+      <span class="tech-tag">{{ tech }}</span>
+      {% endfor %}
+    </div>
+    {% endif %}
+
     {{ content }}
+
   </div>
 
 </article>
