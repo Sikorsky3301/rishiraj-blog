@@ -1,0 +1,5 @@
+title: "ai_engineer"
+description: "Notes from the AI Engineer YouTube channel"
+baseurl: ""
+url: ""
+permalink: /blog/:year/:month/:day/:title/
