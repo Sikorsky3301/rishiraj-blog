@@ -3,7 +3,7 @@ import './globals.css'
 
 export const metadata: Metadata = {
   title: 'ai.engineer',
-  description: 'Notes from the AI Engineer YouTube channel',
+  description: 'AI engineering notes by Rishi Raj',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -28,7 +28,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
         <footer className="site-footer">
           <div className="wrapper">
-            <p>Notes from the AI Engineer YouTube channel</p>
+            <p>Rishi Raj</p>
             <ul className="footer-links">
               <li>
                 <a href="https://github.com/Sikorsky3301" target="_blank" rel="noreferrer">

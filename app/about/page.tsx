@@ -1,18 +1,6 @@
 export default function AboutPage() {
   return (
     <div>
-      <p>
-        This site tracks and summarises videos from the{' '}
-        <a href="https://www.youtube.com/@aiDotEngineer" target="_blank" rel="noreferrer">
-          AI Engineer
-        </a>{' '}
-        and{' '}
-        <a href="https://www.youtube.com/@theaisearch" target="_blank" rel="noreferrer">
-          AI Search
-        </a>{' '}
-        YouTube channels. New posts are added automatically within a few hours of each upload.
-      </p>
-
       <hr style={{ margin: '28px 0', border: 'none', borderTop: '1px solid #e8e8e8' }} />
 
       <h2 style={{ fontSize: 18, fontWeight: 'normal', marginBottom: 24 }}>Contributors</h2>
