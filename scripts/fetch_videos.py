@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 """
 Fetches videos from multiple YouTube RSS feeds, extracts transcripts,
-sends to Groq for structured summaries, writes _posts/*.md files.
+sends to Groq for structured summaries, inserts into Supabase.
 
-Env vars:
-  YOUTUBE_RSS_URLS  — comma-separated list of YouTube RSS feed URLs
-  GROQ_API_KEY      — Groq API key
+Env vars required:
+  YOUTUBE_RSS_URLS     — comma-separated YouTube RSS feed URLs
+  GROQ_API_KEY         — Groq API key
+  SUPABASE_URL         — Supabase project URL
+  SUPABASE_SERVICE_KEY — Supabase service role key (for inserts)
 """
 import feedparser
 import os
@@ -21,17 +23,23 @@ try:
 except ImportError:
     Groq = None
 
-RSS_URLS     = [u.strip() for u in os.environ.get('YOUTUBE_RSS_URLS', '').split(',') if u.strip()]
-GROQ_API_KEY = os.environ.get('GROQ_API_KEY', '')
-POSTS_DIR    = '_posts'
-GROQ_MODEL   = 'llama-3.3-70b-versatile'
+try:
+    from supabase import create_client
+except ImportError:
+    create_client = None
+
+RSS_URLS       = [u.strip() for u in os.environ.get('YOUTUBE_RSS_URLS', '').split(',') if u.strip()]
+GROQ_API_KEY   = os.environ.get('GROQ_API_KEY', '')
+SUPABASE_URL   = os.environ.get('SUPABASE_URL', '')
+SUPABASE_KEY   = os.environ.get('SUPABASE_SERVICE_KEY', '')
+GROQ_MODEL     = 'llama-3.3-70b-versatile'
 
 
 def slugify(text):
     text = text.lower()
     text = re.sub(r'[^\w\s-]', '', text)
     text = re.sub(r'[\s_-]+', '-', text)
-    return text.strip('-')[:55]
+    return text.strip('-')[:60]
 
 
 def get_transcript(video_id):
@@ -61,7 +69,6 @@ def groq_summarize(title, channel, source_text, source_label):
         return '', ''
 
     client = Groq(api_key=GROQ_API_KEY)
-
     prompt = f"""You are writing a blog post summary for an AI engineering blog.
 
 Channel: {channel}
@@ -92,9 +99,9 @@ One sentence: the single most important thing a viewer should walk away knowing.
             max_tokens=1500,
         )
         output = resp.choices[0].message.content.strip()
-        print(f'  Groq: {len(output)} chars returned')
+        print(f'  Groq: {len(output)} chars')
 
-        # Extract tech stack for frontmatter tags
+        # Extract tech stack line
         tech_stack = ''
         in_tech = False
         for line in output.split('\n'):
@@ -116,12 +123,12 @@ One sentence: the single most important thing a viewer should walk away knowing.
         return '', ''
 
 
-def process_feed(rss_url):
+def process_feed(rss_url, db):
     print(f'\nFetching: {rss_url}')
     feed = feedparser.parse(rss_url)
 
     if not feed.entries:
-        print('  No entries found.')
+        print('  No entries.')
         return 0
 
     channel_name = feed.feed.get('title', 'Unknown')
@@ -137,22 +144,19 @@ def process_feed(rss_url):
         published = entry.published
         date_str  = published[:10]
 
-        slug     = slugify(title)
-        filename = f'{date_str}-{slug}.md'
-        filepath = os.path.join(POSTS_DIR, filename)
-
-        if os.path.exists(filepath):
+        # Check if already in Supabase
+        existing = db.table('posts').select('id').eq('video_id', video_id).execute()
+        if existing.data:
             continue
 
         print(f'\n  New: {title}')
-
         description = get_description(entry)
         transcript  = get_transcript(video_id)
 
         if transcript:
             source_text, source_label = transcript, 'transcript'
         elif description:
-            print(f'  Falling back to description ({len(description)} chars)')
+            print(f'  Using description ({len(description)} chars)')
             source_text, source_label = description, 'description'
         else:
             source_text, source_label = '', ''
@@ -161,51 +165,48 @@ def process_feed(rss_url):
         tech_stack = ''
         if source_text:
             summary_md, tech_stack = groq_summarize(title, channel_name, source_text, source_label)
-        else:
-            print('  No source text — skipping Groq')
 
-        # Build markdown body
-        parts = []
-        if summary_md:
-            parts.append(summary_md)
-        if description:
-            parts.append(f'## Description\n\n{description}')
-        body = '\n\n---\n\n'.join(parts) if parts else description
+        slug = slugify(title)
 
-        safe_title   = title.replace('"', '\\"').replace('\\', '\\\\')
-        safe_channel = channel_name.replace('"', '\\"')
-        safe_tech    = tech_stack.replace('"', '\\"').strip() if tech_stack else ''
+        row = {
+            'video_id':    video_id,
+            'slug':        slug,
+            'title':       title,
+            'date':        date_str,
+            'channel':     channel_name,
+            'tech_stack':  tech_stack,
+            'summary':     summary_md,
+            'description': description,
+        }
 
-        content = f"""---
-layout: post
-title: "{safe_title}"
-date: {date_str}
-youtube_id: {video_id}
-channel: "{safe_channel}"
-tech_stack: "{safe_tech}"
----
-
-{body}
-"""
-        with open(filepath, 'w', encoding='utf-8') as f:
-            f.write(content)
-        print(f'  Created: {filename}')
-        new_count += 1
+        try:
+            db.table('posts').insert(row).execute()
+            print(f'  Inserted: {slug}')
+            new_count += 1
+        except Exception as e:
+            print(f'  Insert error: {e}')
 
     return new_count
 
 
 def main():
     if not RSS_URLS:
-        print('Error: YOUTUBE_RSS_URLS is not set.')
+        print('Error: YOUTUBE_RSS_URLS not set.')
+        return
+    if not SUPABASE_URL or not SUPABASE_KEY:
+        print('Error: SUPABASE_URL or SUPABASE_SERVICE_KEY not set.')
+        return
+    if create_client is None:
+        print('Error: pip install supabase')
         return
 
-    os.makedirs(POSTS_DIR, exist_ok=True)
+    db = create_client(SUPABASE_URL, SUPABASE_KEY)
+
     total = 0
     for url in RSS_URLS:
-        total += process_feed(url)
+        total += process_feed(url, db)
 
-    print(f'\nDone — {total} new post(s) created across {len(RSS_URLS)} channel(s).')
+    print(f'\nDone — {total} new post(s) inserted into Supabase.')
 
 
 if __name__ == '__main__':
