@@ -224,6 +224,29 @@ a:hover {
   color: #828282;
 }
 
+.footer-links {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  gap: 20px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+.footer-links a {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #828282;
+  font-size: 13px;
+  text-decoration: none;
+}
+
+.footer-links a:hover {
+  color: #111;
+  text-decoration: none;
+}
+
 /* ── Contributors (about page) ── */
 
 .contributor-list {
