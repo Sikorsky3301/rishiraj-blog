@@ -1,5 +1,5 @@
 title: "ai.engineer"
 description: "Notes from the AI Engineer YouTube channel"
-baseurl: "/rishiraj-blog"
-url: "https://sikorsky3301.github.io"
+baseurl: ""
+url: ""
 permalink: /blog/:year/:month/:day/:title/

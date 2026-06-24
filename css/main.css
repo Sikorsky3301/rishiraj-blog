@@ -155,6 +155,20 @@ a:hover {
   height: 100%;
 }
 
+/* ── Channel label ── */
+
+.channel-label {
+  display: inline-block;
+  font-family: monospace;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #828282;
+  border: 1px solid #e8e8e8;
+  padding: 2px 7px;
+  margin-bottom: 12px;
+}
+
 /* ── Tech stack tags ── */
 
 .tech-stack {
