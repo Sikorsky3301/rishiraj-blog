@@ -23,7 +23,7 @@ foreach ($var in @('YOUTUBE_RSS_URLS','GROQ_API_KEY','SUPABASE_URL','SUPABASE_SE
 }
 
 Write-Host "Installing dependencies..." -ForegroundColor Cyan
-pip install feedparser youtube-transcript-api groq supabase -q
+pip install feedparser supabase -q
 
 Write-Host "`nFetching and inserting videos..." -ForegroundColor Cyan
 python scripts/fetch_videos.py

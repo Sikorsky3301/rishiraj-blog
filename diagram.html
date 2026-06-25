@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>System Pipeline — ai.engineer</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: #f8f9fa;
+    padding: 48px 32px;
+    color: #1a1a2e;
+  }
+
+  h1 {
+    text-align: center;
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #1a1a2e;
+    margin-bottom: 6px;
+  }
+
+  .subtitle {
+    text-align: center;
+    font-size: 13px;
+    color: #888;
+    margin-bottom: 48px;
+    letter-spacing: 0.04em;
+  }
+
+  .pipeline {
+    max-width: 860px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  /* ── Layer ── */
+  .layer {
+    border-radius: 12px;
+    padding: 24px 28px;
+    position: relative;
+  }
+
+  .layer-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    margin-bottom: 16px;
+    opacity: 0.6;
+  }
+
+  .layer-content {
+    display: flex;
+    gap: 16px;
+    align-items: stretch;
+    flex-wrap: wrap;
+  }
+
+  /* ── Box ── */
+  .box {
+    background: rgba(255,255,255,0.75);
+    border-radius: 8px;
+    padding: 14px 18px;
+    flex: 1;
+    min-width: 160px;
+    border: 1px solid rgba(0,0,0,0.07);
+    backdrop-filter: blur(4px);
+  }
+
+  .box-title {
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+
+  .box-icon {
+    width: 20px;
+    height: 20px;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    flex-shrink: 0;
+  }
+
+  .box ul {
+    list-style: none;
+    padding: 0;
+  }
+
+  .box ul li {
+    font-size: 11.5px;
+    color: #555;
+    padding: 2px 0;
+    display: flex;
+    align-items: flex-start;
+    gap: 5px;
+  }
+
+  .box ul li::before {
+    content: '·';
+    color: #aaa;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .tag {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 1px 6px;
+    border-radius: 3px;
+    margin-left: 4px;
+    vertical-align: middle;
+  }
+
+  /* ── Arrow ── */
+  .arrow {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 10px 0;
+    position: relative;
+  }
+
+  .arrow-line {
+    width: 2px;
+    height: 32px;
+    background: linear-gradient(to bottom, #cbd5e1, #94a3b8);
+  }
+
+  .arrow-head {
+    width: 0;
+    height: 0;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-top: 8px solid #94a3b8;
+  }
+
+  .arrow-label {
+    position: absolute;
+    left: calc(50% + 14px);
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 10px;
+    color: #94a3b8;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+    background: #f8f9fa;
+    padding: 1px 6px;
+    border-radius: 4px;
+  }
+
+  /* ── Layer colours ── */
+  .layer-sources  { background: #eff6ff; }
+  .layer-local    { background: #f0fdf4; }
+  .layer-db       { background: #faf5ff; }
+  .layer-frontend { background: #fff7ed; }
+  .layer-deploy   { background: #f0f9ff; }
+
+  .layer-sources  .layer-label { color: #1d4ed8; }
+  .layer-local    .layer-label { color: #15803d; }
+  .layer-db       .layer-label { color: #7e22ce; }
+  .layer-frontend .layer-label { color: #c2410c; }
+  .layer-deploy   .layer-label { color: #0369a1; }
+
+  .icon-sources  { background: #dbeafe; color: #1d4ed8; }
+  .icon-local    { background: #dcfce7; color: #15803d; }
+  .icon-db       { background: #ede9fe; color: #7e22ce; }
+  .icon-frontend { background: #ffedd5; color: #c2410c; }
+  .icon-deploy   { background: #e0f2fe; color: #0369a1; }
+
+  .tag-read  { background: #dcfce7; color: #15803d; }
+  .tag-write { background: #fee2e2; color: #b91c1c; }
+  .tag-isr   { background: #fef9c3; color: #854d0e; }
+  .tag-pub   { background: #dbeafe; color: #1e40af; }
+
+  /* ── Schema table ── */
+  .schema {
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    color: #6b21a8;
+    background: rgba(139,92,246,0.06);
+    border-radius: 6px;
+    padding: 10px 12px;
+    margin-top: 10px;
+    line-height: 1.8;
+    border: 1px solid rgba(139,92,246,0.15);
+  }
+
+  /* ── Footer ── */
+  .diagram-footer {
+    text-align: center;
+    margin-top: 40px;
+    font-size: 11px;
+    color: #bbb;
+    letter-spacing: 0.04em;
+  }
+</style>
+</head>
+<body>
+
+<h1>System Pipeline</h1>
+<p class="subtitle">ai.engineer — End-to-End Architecture</p>
+
+<div class="pipeline">
+
+  <!-- DATA SOURCES -->
+  <div class="layer layer-sources">
+    <div class="layer-label">01 · Data Sources</div>
+    <div class="layer-content">
+
+      <div class="box">
+        <div class="box-title">
+          <div class="box-icon icon-sources">▶</div>
+          AI Engineer
+        </div>
+        <ul>
+          <li>youtube.com/@aiDotEngineer</li>
+          <li>Channel ID: UCLKPca3kwwd-B59HNr-_lvA</li>
+          <li>Technical AI engineering talks</li>
+        </ul>
+      </div>
+
+      <div class="box">
+        <div class="box-title">
+          <div class="box-icon icon-sources">▶</div>
+          AI Search
+        </div>
+        <ul>
+          <li>youtube.com/@theaisearch</li>
+          <li>Channel ID: UCIgnGlGkVRhd4qNFcEwLL4A</li>
+          <li>AI tools, models & news</li>
+        </ul>
+      </div>
+
+      <div class="box">
+        <div class="box-title">
+          <div class="box-icon icon-sources">⌁</div>
+          YouTube RSS Feed
+        </div>
+        <ul>
+          <li>youtube.com/feeds/videos.xml</li>
+          <li>Returns latest 15 videos per channel</li>
+          <li>Fields: title, date, description, video_id</li>
+          <li>No API key required</li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="arrow">
+    <div class="arrow-line"></div>
+    <div class="arrow-head"></div>
+    <span class="arrow-label">RSS / XML (HTTP)</span>
+  </div>
+
+  <!-- LOCAL MACHINE -->
+  <div class="layer layer-local">
+    <div class="layer-label">02 · Local Machine</div>
+    <div class="layer-content">
+
+      <div class="box">
+        <div class="box-title">
+          <div class="box-icon icon-local">⚡</div>
+          fetch.ps1
+        </div>
+        <ul>
+          <li>PowerShell script — run manually</li>
+          <li>Loads .env.local (secrets)</li>
+          <li>Installs Python dependencies</li>
+          <li>Calls fetch_videos.py</li>
+        </ul>
+      </div>
+
+      <div class="box">
+        <div class="box-title">
+          <div class="box-icon icon-local">⚙</div>
+          scripts/fetch_videos.py
+        </div>
+        <ul>
+          <li>feedparser — parse RSS XML</li>
+          <li>Processes latest 5 videos per channel</li>
+          <li>Checks Supabase for duplicates</li>
+          <li>Extracts: title, date, description, video_id</li>
+          <li>Inserts new rows into Supabase</li>
+        </ul>
+      </div>
+
+      <div class="box">
+        <div class="box-title">
+          <div class="box-icon icon-local">🔒</div>
+          .env.local
+        </div>
+        <ul>
+          <li>SUPABASE_URL</li>
+          <li>SUPABASE_SERVICE_KEY <span class="tag tag-write">secret</span></li>
+          <li>YOUTUBE_RSS_URLS</li>
+          <li>Gitignored — never pushed</li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="arrow">
+    <div class="arrow-line"></div>
+    <div class="arrow-head"></div>
+    <span class="arrow-label">REST API / HTTPS (Service Key)</span>
+  </div>
+
+  <!-- DATABASE -->
+  <div class="layer layer-db">
+    <div class="layer-label">03 · Database — Supabase (PostgreSQL)</div>
+    <div class="layer-content">
+
+      <div class="box" style="flex: 2;">
+        <div class="box-title">
+          <div class="box-icon icon-db">⬡</div>
+          posts table
+        </div>
+        <div class="schema">
+id           uuid  PRIMARY KEY<br>
+video_id     text  UNIQUE<br>
+slug         text  UNIQUE<br>
+title        text<br>
+date         date<br>
+channel      text<br>
+tech_stack   text<br>
+summary      text<br>
+description  text<br>
+created_at   timestamptz
+        </div>
+      </div>
+
+      <div class="box">
+        <div class="box-title">
+          <div class="box-icon icon-db">🛡</div>
+          Row Level Security
+        </div>
+        <ul>
+          <li>RLS enabled on posts table</li>
+          <li>Public READ <span class="tag tag-read">anon key</span></li>
+          <li>INSERT/DELETE <span class="tag tag-write">service key</span></li>
+          <li>Frontend can only read</li>
+          <li>Script can write</li>
+        </ul>
+      </div>
+
+      <div class="box">
+        <div class="box-title">
+          <div class="box-icon icon-db">⇄</div>
+          REST API
+        </div>
+        <ul>
+          <li>Auto-generated by Supabase</li>
+          <li>Endpoint: /rest/v1/posts</li>
+          <li>Supports filtering, ordering, pagination</li>
+          <li>Used by both script and frontend</li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="arrow">
+    <div class="arrow-line"></div>
+    <div class="arrow-head"></div>
+    <span class="arrow-label">REST API / HTTPS (Anon Key)</span>
+  </div>
+
+  <!-- FRONTEND -->
+  <div class="layer layer-frontend">
+    <div class="layer-label">04 · Frontend — Next.js 14 (App Router)</div>
+    <div class="layer-content">
+
+      <div class="box">
+        <div class="box-title">
+          <div class="box-icon icon-frontend">⌂</div>
+          / Homepage
+        </div>
+        <ul>
+          <li>Lists all posts by date</li>
+          <li>10 posts per page</li>
+          <li>← Newer / Older → pagination</li>
+          <li><span class="tag tag-isr">ISR 3600s</span></li>
+        </ul>
+      </div>
+
+      <div class="box">
+        <div class="box-title">
+          <div class="box-icon icon-frontend">≡</div>
+          /blog/[slug]
+        </div>
+        <ul>
+          <li>Individual post page</li>
+          <li>YouTube embed</li>
+          <li>Tech stack tags</li>
+          <li>Summary + description</li>
+          <li>Channel label</li>
+        </ul>
+      </div>
+
+      <div class="box">
+        <div class="box-title">
+          <div class="box-icon icon-frontend">◎</div>
+          /about
+        </div>
+        <ul>
+          <li>Contributor profile</li>
+          <li>GitHub, LinkedIn, X links</li>
+        </ul>
+      </div>
+
+      <div class="box">
+        <div class="box-title">
+          <div class="box-icon icon-frontend">⚙</div>
+          lib/supabase.ts
+        </div>
+        <ul>
+          <li>@supabase/supabase-js client</li>
+          <li>NEXT_PUBLIC_SUPABASE_URL <span class="tag tag-pub">public</span></li>
+          <li>NEXT_PUBLIC_SUPABASE_ANON_KEY <span class="tag tag-pub">public</span></li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="arrow">
+    <div class="arrow-line"></div>
+    <div class="arrow-head"></div>
+    <span class="arrow-label">git push → auto deploy</span>
+  </div>
+
+  <!-- DEPLOYMENT -->
+  <div class="layer layer-deploy">
+    <div class="layer-label">05 · Deployment</div>
+    <div class="layer-content">
+
+      <div class="box">
+        <div class="box-title">
+          <div class="box-icon icon-deploy">⎈</div>
+          GitHub
+        </div>
+        <ul>
+          <li>Sikorsky3301/rishiraj-blog</li>
+          <li>Source of truth for all code</li>
+          <li>Every push triggers Vercel deploy</li>
+        </ul>
+      </div>
+
+      <div class="box">
+        <div class="box-title">
+          <div class="box-icon icon-deploy">▲</div>
+          Vercel
+        </div>
+        <ul>
+          <li>Detects Next.js via package.json</li>
+          <li>Runs: npm run build</li>
+          <li>Serves on vercel.app domain</li>
+          <li>Env vars: NEXT_PUBLIC_* keys</li>
+        </ul>
+      </div>
+
+      <div class="box">
+        <div class="box-title">
+          <div class="box-icon icon-deploy">↻</div>
+          ISR (Incremental Static Regen)
+        </div>
+        <ul>
+          <li>Pages pre-rendered at build time</li>
+          <li>Revalidated every 3600 seconds</li>
+          <li>New Supabase rows appear automatically</li>
+          <li>No redeploy needed for new posts</li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<p class="diagram-footer">ai.engineer · Sikorsky3301/rishiraj-blog · Built with Next.js + Supabase + Vercel</p>
+
+</body>
+</html>
